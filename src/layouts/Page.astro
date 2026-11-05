@@ -1,21 +1,25 @@
 ---
-// Every page's frame: the design system's styles, the theme from the system setting, and on a demo
-// page a link back to the list.
+// Every page's frame: the design system's styles and theme, and a bar with the logo linking home,
+// search over the demos and the display settings.
 import "@rottensea/ds-personal-website/index.css";
+import Logo from "@rottensea/ds-personal-website/assets/logo-colored.svg";
 // Each by its own path: the components index would pull every component's scripts into the build.
+import IconButton from "@rottensea/ds-personal-website/components/buttons/IconButton.astro";
 import Fonts from "@rottensea/ds-personal-website/components/head/Fonts.astro";
 import ThemeScript from "@rottensea/ds-personal-website/components/head/ThemeScript.astro";
+import SearchPanel from "@rottensea/ds-personal-website/components/layout/SearchPanel.astro";
+import SettingsMenu from "@rottensea/ds-personal-website/components/layout/SettingsMenu.astro";
 
 interface Props {
   title: string;
   description: string;
-  /** Shows the link back to the list of demos. */
-  back?: boolean;
   /** Starts the content at the top of the page instead of centring it. */
   top?: boolean;
+  /** Opens search with "/" and Ctrl+K. Off where the page uses those keys itself. */
+  shortcuts?: boolean;
 }
 
-const { title, description, back = false, top = false } = Astro.props;
+const { title, description, top = false, shortcuts = true } = Astro.props;
 // BASE_URL keeps whatever trailing slash astro.config gives base, so add one.
 const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 ---
@@ -28,22 +32,45 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site).href} />
+    <link rel="icon" href={`${base}favicon.svg`} type="image/svg+xml" />
     <ThemeScript />
     <Fonts />
   </head>
-  <body>
-    {
-      back && (
-        <header>
-          <a href={base}>All demos</a>
-        </header>
-      )
-    }
+  <body data-base={base}>
+    <header>
+      <a class="brand" href={base}>
+        <Logo width={24} height={24} aria-hidden="true" />
+        Misc
+      </a>
+      <div class="actions">
+        <IconButton icon="search" label="Search" data-ds-search-open="demo-search" />
+        <SettingsMenu />
+      </div>
+    </header>
     <main class:list={{ top }}>
       <slot />
     </main>
+    <SearchPanel
+      id="demo-search"
+      placeholder="Search demos"
+      shortcuts={shortcuts}
+    />
   </body>
 </html>
+
+<script>
+  import { DEMOS } from "../demos.ts";
+  import { type Result, search } from "../scripts/search.ts";
+
+  type Panel = HTMLElement & { setResults(results: Result[]): void };
+
+  const panel = document.querySelector<Panel>("ds-search-panel");
+  const base = document.body.dataset.base ?? "/";
+  const show = (query: string) => panel?.setResults(search(DEMOS, query, base));
+  // Opening shows every demo; typing narrows the list.
+  panel?.addEventListener("ds-open", () => show(panel.querySelector("input")?.value.trim() ?? ""));
+  panel?.addEventListener("ds-query", (event) => show((event as CustomEvent<string>).detail));
+</script>
 
 <style>
   body {
@@ -55,21 +82,26 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
   }
 
   header {
-    padding: var(--space-md) var(--space-lg);
-    font: var(--nav-link-weight) var(--nav-link-size) / var(--nav-link-lh) var(--nav-link-family);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: var(--space-sm) var(--space-lg);
   }
 
-  header a {
-    color: var(--text-muted);
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font: var(--title-sm-weight) var(--title-sm-size) / var(--title-sm-lh) var(--title-sm-family);
+    color: var(--text-ink);
     text-decoration: none;
   }
 
-  header a:hover {
-    color: var(--text-ink);
-  }
-
-  header a::before {
-    content: "← ";
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
   }
 
   main {

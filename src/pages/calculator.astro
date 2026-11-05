@@ -29,7 +29,7 @@ const KEYS = [
 <Page
   title="Calculator"
   description="A basic calculator that takes keyboard input and shows 0.1 + 0.2 as 0.3."
-  back
+  shortcuts={false}
 >
   <h1>Calculator</h1>
   <div class="calculator" data-calculator>
@@ -91,6 +91,9 @@ const KEYS = [
 
     document.addEventListener("keydown", (event) => {
       if (event.ctrlKey || event.metaKey || event.altKey) return;
+      // Keys typed into the search box or the settings panel are not for the calculator.
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest("input, textarea, select, dialog, [popover]")) return;
       const key = keyFor(event.key);
       if (!key) return;
       event.preventDefault();
