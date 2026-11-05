@@ -1,20 +1,7 @@
 ---
 import Surface from "@rottensea/ds-personal-website/components/cards/Surface.astro";
+import { DEMOS } from "../demos.ts";
 import Page from "../layouts/Page.astro";
-
-// One entry per demo, each a page in src/pages/.
-const DEMOS = [
-  {
-    name: "Calculator",
-    path: "calculator/",
-    summary: "A basic calculator that takes keyboard input."
-  },
-  {
-    name: "Working mark",
-    path: "working-mark/",
-    summary: "Six working states, each with an entrance, a loop and an exit."
-  }
-];
 
 // BASE_URL keeps whatever trailing slash astro.config gives base, so add one.
 const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
@@ -23,6 +10,7 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 <Page
   title="Misc"
   description="Small demos, one page each."
+  top
 >
   <h1>Misc</h1>
   <ul>
@@ -50,11 +38,18 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
     color: var(--text-ink);
   }
 
+  /* Every card the same width, and every row as tall as the tallest card. */
   ul {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    grid-template-columns: repeat(auto-fit, min(100%, 18rem));
+    grid-auto-rows: 1fr;
+    justify-content: center;
     gap: var(--space-md);
     width: min(100%, var(--container-wide));
+  }
+
+  li > :global(*) {
+    height: 100%;
   }
 
   h2 {
