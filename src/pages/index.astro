@@ -1,0 +1,64 @@
+---
+import Surface from "@rottensea/ds-personal-website/components/cards/Surface.astro";
+import Page from "../layouts/Page.astro";
+
+// One entry per demo, each a page in src/pages/.
+const DEMOS = [
+  {
+    name: "Calculator",
+    path: "calculator/",
+    summary: "A basic calculator that takes keyboard input."
+  }
+];
+
+// BASE_URL keeps whatever trailing slash astro.config gives base, so add one.
+const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+---
+
+<Page
+  title="Misc"
+  description="Small demos, one page each."
+>
+  <h1>Misc</h1>
+  <ul>
+    {
+      DEMOS.map(({ name, path, summary }) => (
+        <li>
+          <Surface
+            href={`${base}${path}`}
+            variant="outline"
+            hover
+          >
+            <h2>{name}</h2>
+            <p>{summary}</p>
+          </Surface>
+        </li>
+      ))
+    }
+  </ul>
+</Page>
+
+<style>
+  h1 {
+    font: var(--display-xl-weight) var(--display-xl-size) / var(--display-xl-lh) var(--display-xl-family);
+    letter-spacing: var(--display-xl-ls);
+    color: var(--text-ink);
+  }
+
+  ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: var(--space-md);
+    width: min(100%, var(--container-wide));
+  }
+
+  h2 {
+    font: var(--title-md-weight) var(--title-md-size) / var(--title-md-lh) var(--title-md-family);
+    color: var(--text-ink);
+  }
+
+  p {
+    margin-top: var(--space-xxs);
+    color: var(--text-muted);
+  }
+</style>

@@ -1,0 +1,195 @@
+---
+import Page from "../layouts/Page.astro";
+
+// The keys in the order the grid shows them, four to a row.
+const KEYS = [
+  { label: "AC", key: "Escape", name: "Clear", kind: "function" },
+  { label: "⌫", key: "Backspace", name: "Backspace", kind: "function" },
+  { label: "%", key: "%", name: "Percent", kind: "function" },
+  { label: "÷", key: "/", name: "Divide", kind: "operator" },
+  { label: "7", key: "7" },
+  { label: "8", key: "8" },
+  { label: "9", key: "9" },
+  { label: "×", key: "*", name: "Multiply", kind: "operator" },
+  { label: "4", key: "4" },
+  { label: "5", key: "5" },
+  { label: "6", key: "6" },
+  { label: "−", key: "-", name: "Subtract", kind: "operator" },
+  { label: "1", key: "1" },
+  { label: "2", key: "2" },
+  { label: "3", key: "3" },
+  { label: "+", key: "+", name: "Add", kind: "operator" },
+  { label: "±", key: "negate", name: "Change sign", kind: "function" },
+  { label: "0", key: "0" },
+  { label: ".", key: ".", name: "Decimal point" },
+  { label: "=", key: "=", name: "Equals", kind: "equals" }
+];
+---
+
+<Page
+  title="Calculator"
+  description="A basic calculator that takes keyboard input and shows 0.1 + 0.2 as 0.3."
+  back
+>
+  <h1>Calculator</h1>
+  <div class="calculator" data-calculator>
+    <output class="screen" aria-live="polite">
+      <span class="expression" data-expression></span>
+      <span class="display" data-display>0</span>
+    </output>
+    <div class="keys" role="group" aria-label="Keys">
+      {
+        KEYS.map(({ label, key, name, kind }) => (
+          <button
+            type="button"
+            class:list={["key", kind && `key--${kind}`]}
+            data-key={key}
+            aria-label={name}
+          >
+            {label}
+          </button>
+        ))
+      }
+    </div>
+  </div>
+  <p class="hint">Type on the keyboard too: Enter for =, Backspace to delete, Esc to clear.</p>
+</Page>
+
+<script>
+  import { expression, initial, keyFor, press, type Key, type State } from "../scripts/calculator.ts";
+
+  const root = document.querySelector<HTMLElement>("[data-calculator]");
+  if (root) {
+    const display = root.querySelector<HTMLElement>("[data-display]");
+    const line = root.querySelector<HTMLElement>("[data-expression]");
+    const operators = root.querySelectorAll<HTMLButtonElement>(".key--operator");
+    let state: State = initial;
+
+    const render = () => {
+      if (display) display.textContent = state.display;
+      if (line) line.textContent = expression(state);
+      // The operator waiting for its right operand stays lit until a digit arrives.
+      for (const button of operators) {
+        const operator = keyFor(button.dataset.key ?? "");
+        const waiting = operator?.type === "operator" && operator.value === state.operator && state.fresh;
+        button.toggleAttribute("data-active", waiting);
+      }
+    };
+
+    const apply = (key: Key) => {
+      state = press(state, key);
+      render();
+    };
+
+    root.addEventListener("click", (event) => {
+      const button = (event.target as Element).closest<HTMLButtonElement>("[data-key]");
+      if (!button) return;
+      const name = button.dataset.key ?? "";
+      const key = name === "negate" ? ({ type: "negate" } as const) : keyFor(name);
+      if (key) apply(key);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      const key = keyFor(event.key);
+      if (!key) return;
+      event.preventDefault();
+      apply(key);
+      // Lights the matching button for a moment, as if it had been pressed.
+      const button = root.querySelector<HTMLElement>(`[data-key="${CSS.escape(event.key === "Enter" ? "=" : event.key)}"]`);
+      button?.animate([{ filter: "brightness(0.85)" }, { filter: "none" }], { duration: 150 });
+    });
+  }
+</script>
+
+<style>
+  h1 {
+    font: var(--display-md-weight) var(--display-md-size) / var(--display-md-lh) var(--display-md-family);
+    letter-spacing: var(--display-md-ls);
+    color: var(--text-ink);
+  }
+
+  .calculator {
+    width: min(100%, 20rem);
+    padding: var(--space-md);
+    border-radius: var(--radius-xl);
+    background: var(--surface-card);
+    border: 1px solid var(--hairline);
+  }
+
+  .screen {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding: var(--space-sm) var(--space-sm) var(--space-md);
+    min-height: 5.5rem;
+    justify-content: flex-end;
+  }
+
+  .expression {
+    min-height: 1.25rem;
+    font: var(--caption-weight) var(--caption-size) / var(--caption-lh) var(--font-mono);
+    color: var(--text-muted);
+  }
+
+  .display {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    text-align: right;
+    font: 400 2.5rem / 1.15 var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-ink);
+  }
+
+  .keys {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-xs);
+  }
+
+  .key {
+    min-height: var(--tap-min);
+    aspect-ratio: 1.15;
+    border-radius: var(--radius-lg);
+    background: var(--surface-soft);
+    color: var(--text-ink);
+    font: 500 1.25rem / 1 var(--font-sans);
+    cursor: pointer;
+    transition: filter var(--motion-fast) var(--ease-move);
+  }
+
+  .key:hover {
+    filter: brightness(0.95);
+  }
+
+  .key:active {
+    filter: brightness(0.85);
+  }
+
+  .key:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  .key--function {
+    color: var(--text-muted);
+  }
+
+  .key--operator,
+  .key--equals {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+
+  .key--operator[data-active] {
+    background: var(--color-on-primary);
+    color: var(--color-primary);
+    box-shadow: inset 0 0 0 2px var(--color-primary);
+  }
+
+  .hint {
+    font: var(--body-sm-weight) var(--body-sm-size) / var(--body-sm-lh) var(--body-sm-family);
+    color: var(--text-muted);
+    text-align: center;
+  }
+</style>

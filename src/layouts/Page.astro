@@ -1,0 +1,82 @@
+---
+// Every page's frame: the design system's styles, the theme from the system setting, and on a demo
+// page a link back to the list.
+import "@rottensea/ds-personal-website/index.css";
+// Each by its own path: the components index would pull every component's scripts into the build.
+import Fonts from "@rottensea/ds-personal-website/components/head/Fonts.astro";
+import ThemeScript from "@rottensea/ds-personal-website/components/head/ThemeScript.astro";
+
+interface Props {
+  title: string;
+  description: string;
+  /** Shows the link back to the list of demos. */
+  back?: boolean;
+}
+
+const { title, description, back = false } = Astro.props;
+// BASE_URL keeps whatever trailing slash astro.config gives base, so add one.
+const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site).href} />
+    <ThemeScript />
+    <Fonts />
+  </head>
+  <body>
+    {
+      back && (
+        <header>
+          <a href={base}>All demos</a>
+        </header>
+      )
+    }
+    <main>
+      <slot />
+    </main>
+  </body>
+</html>
+
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+    background: var(--surface-canvas);
+    color: var(--text-body);
+  }
+
+  header {
+    padding: var(--space-md) var(--space-lg);
+    font: var(--nav-link-weight) var(--nav-link-size) / var(--nav-link-lh) var(--nav-link-family);
+  }
+
+  header a {
+    color: var(--text-muted);
+    text-decoration: none;
+  }
+
+  header a:hover {
+    color: var(--text-ink);
+  }
+
+  header a::before {
+    content: "← ";
+  }
+
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xl);
+    padding: var(--space-xl) var(--space-lg);
+  }
+</style>
