@@ -71,7 +71,7 @@ const steps = (list: Step[]) => JSON.stringify(list);
 </Page>
 
 <script>
-  import { frameAt, frames, type Step, sprite, stillFrame } from "../scripts/working-mark.ts";
+  import { frameAt, frames, type Step, sprite } from "../scripts/working-mark.ts";
 
   const grid = document.querySelector<HTMLElement>("[data-sprites]");
   const folder = grid?.dataset.sprites ?? "";
@@ -104,11 +104,8 @@ const steps = (list: Step[]) => JSON.stringify(list);
     mark.strip.style.transform = `translateY(${(-frame * 100) / frames(step)}%)`;
   };
 
-  const reduced = () =>
-    document.documentElement.dataset.reduceMotion === "true" ||
-    matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  // Every strip is decoded first, so no mark blinks empty the first time its strip changes.
+  // Every strip is decoded first, so no mark blinks empty the first time its strip changes. The
+  // animation is what the page shows, so it plays even when the system asks for reduced motion.
   const files = new Set(marks.flatMap((mark) => mark.steps.map(sprite)));
   Promise.all(
     [...files].map((file) => {
@@ -117,13 +114,6 @@ const steps = (list: Step[]) => JSON.stringify(list);
       return image.decode().catch(() => undefined);
     })
   ).then(() => {
-    if (reduced()) {
-      for (const mark of marks) {
-        const { step, frame } = stillFrame(mark.steps);
-        draw(mark, step, frame);
-      }
-      return;
-    }
     const start = performance.now();
     const tick = (now: number) => {
       for (const mark of marks) {

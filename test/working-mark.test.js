@@ -9,8 +9,7 @@ import {
   frameAt,
   PHASES,
   sequence,
-  sprite,
-  stillFrame
+  sprite
 } from "../src/scripts/working-mark.ts";
 
 const at = (frame) => frame * FRAME_MS + FRAME_MS / 2;
@@ -53,8 +52,4 @@ test("the cycle goes through every action in, loop and out", () => {
     step: { action: "write", phase: "in" },
     frame: 0
   });
-});
-
-test("the still frame is the end of the first step", () => {
-  assert.deepEqual(stillFrame(sequence("read", ["in"])).frame, 20);
 });

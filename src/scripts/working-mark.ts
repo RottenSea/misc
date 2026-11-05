@@ -57,15 +57,6 @@ export function frameAt(
   return { step: steps[0], frame: 0 };
 }
 
-/** The frame shown when motion is reduced: the end of the first step, so the mark has arrived. */
-export function stillFrame(steps: readonly Step[]): {
-  step: Step;
-  frame: number;
-} {
-  const step = steps[0];
-  return { step, frame: frames(step) - 1 };
-}
-
 /** One action's phases in the given order, such as in, loop, loop, out. */
 export function sequence(action: Action, phases: readonly Phase[]): Step[] {
   return phases.map((phase) => ({ action, phase }));

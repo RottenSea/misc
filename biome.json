@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/*.md", "!**/*.svg", "!**/*.html", "!pnpm-lock.yaml"]
+    "includes": ["**", "!**/*.md", "!**/*.svg", "!pnpm-lock.yaml"]
   },
   "formatter": {
     "indentStyle": "space",
