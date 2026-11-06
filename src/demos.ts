@@ -23,5 +23,11 @@ export const DEMOS: Demo[] = [
     path: "windows-animation-disabler/",
     summary:
       "A Windhawk mod that turns off chosen taskbar and shell animations in Windows 11."
+  },
+  {
+    name: "Windows setup",
+    path: "windows-setup/",
+    summary:
+      "A PowerShell script that applies the settings and tweaks from a Windows 11 install guide."
   }
 ];

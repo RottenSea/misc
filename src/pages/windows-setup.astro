@@ -1,0 +1,237 @@
+---
+import Button from "@rottensea/ds-personal-website/components/buttons/Button.astro";
+import Page from "../layouts/Page.astro";
+import { parseSetup } from "../scripts/windows-setup.ts";
+import { FILES } from "../scripts/windows-setup-files.ts";
+
+// The lists below come from the script's own files, the same ones the zip packs, so the page
+// can't drift from what people download.
+const groups = parseSetup(FILES);
+const count = groups.reduce((sum, group) => sum + group.items.length, 0);
+
+const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+const file = "windows-setup.zip";
+const download = `${base}windows-setup/${file}`;
+// Button types its attributes as a button's, which have no `download`, so it goes in through a spread.
+const saveAs: Record<string, string> = { download: file };
+
+const guide = "https://archive.rottenth.cafe/system/windows/";
+const title = "Windows setup";
+const description =
+  "A PowerShell script that applies the settings and tweaks from a Windows 11 install guide.";
+---
+
+<Page
+  title={title}
+  description={description}
+  top
+>
+  <article>
+    <header class="intro">
+      <h1>{title}</h1>
+      <p class="lede">{description}</p>
+      <p class="meta">PowerShell 5.1 · Windows 11 · {count} changes in {groups.length} groups</p>
+      <Button
+        href={download}
+        {...saveAs}
+        iconLeft="download"
+      >
+        Download {file}
+      </Button>
+    </header>
+
+    <section class="prose">
+      <p>
+        The script goes with the <a href={guide}>Windows install guide</a> (in Chinese): it does the
+        settings the guide changes by hand, and the WinUtil tweaks the guide recommends, without
+        running WinUtil. It lists every change first and asks once before applying them. Nothing is
+        backed up and there is no undo, so read the list before you say yes.
+      </p>
+    </section>
+
+    <section class="prose">
+      <h2>Run it</h2>
+      <ol>
+        <li>Download the zip and extract it (right-click it, <strong>Extract All</strong>).</li>
+        <li>Right-click the <code>windows-setup</code> folder inside and choose <strong>Open in Terminal</strong>.</li>
+        <li>Run <code>powershell -ExecutionPolicy Bypass -File .\Setup.ps1</code>. Add <code>-Dev</code> to include the developer environment without being asked.</li>
+        <li>Read the list, answer the questions, and approve the administrator prompt. The changes marked admin run in that window.</li>
+        <li>Sign out or restart when it's done.</li>
+      </ol>
+      <p>
+        Run it from an administrator account: the admin window applies its changes to the account
+        that approves the prompt. The developer environment needs the internet; everything else
+        works offline.
+      </p>
+    </section>
+
+    <section class="prose">
+      <h2>What it changes</h2>
+      {
+        groups.map((group) => (
+          <section class="group">
+            <h3>{group.title}</h3>
+            <p>
+              {group.description}{" "}
+              {group.byDefault ? "Applied unless you say no." : "Only when you ask for it."}
+            </p>
+            <dl>
+              {group.items.map((item) => (
+                <div class="option">
+                  <dt>
+                    <span>{item.title}</span>
+                    {item.admin && <span class="badge">Admin</span>}
+                  </dt>
+                  <dd>{item.description}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ))
+      }
+    </section>
+
+    <section class="prose">
+      <h2>What it leaves to you</h2>
+      <p>
+        Drivers, startup apps, display scale and refresh rate, theme, device name, languages,
+        uninstalling apps and arranging Start depend on your computer and taste, so the guide does
+        them by hand. So are a few settings that have no registry value or command known to work, such
+        as the Snap options and the touchpad's three-finger tap.
+      </p>
+    </section>
+
+    <section class="prose">
+      <h2>Sources</h2>
+      <p>
+        The system optimizations follow the tweaks in Chris Titus Tech's
+        <a href="https://github.com/ChrisTitusTech/winutil">Windows Utility</a>, MIT license; the
+        zip includes its notice.
+      </p>
+    </section>
+  </article>
+</Page>
+
+<style>
+  article {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+    width: min(100%, var(--container-reading));
+  }
+
+  .intro {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+
+  h1 {
+    font: var(--display-md-weight) var(--display-md-size) / var(--display-md-lh) var(--display-md-family);
+    letter-spacing: var(--display-md-ls);
+    color: var(--text-ink);
+  }
+
+  .lede {
+    font: var(--title-sm-weight) var(--title-sm-size) / var(--title-sm-lh) var(--title-sm-family);
+    color: var(--text-body-strong);
+  }
+
+  .meta {
+    margin-bottom: var(--space-xs);
+    font: var(--caption-weight) var(--caption-size) / var(--caption-lh) var(--caption-family);
+    color: var(--text-muted);
+  }
+
+  .prose {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    font: var(--body-md-weight) var(--body-md-size) / var(--body-md-lh) var(--body-md-family);
+  }
+
+  h2 {
+    margin-top: var(--space-md);
+    font: var(--title-lg-weight) var(--title-lg-size) / var(--title-lg-lh) var(--title-lg-family);
+    color: var(--text-ink);
+  }
+
+  h3 {
+    font: var(--title-md-weight) var(--title-md-size) / var(--title-md-lh) var(--title-md-family);
+    color: var(--text-ink);
+  }
+
+  ol {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding-left: 1.5em;
+    list-style: decimal;
+  }
+
+  a {
+    color: var(--text-link);
+    text-underline-offset: 0.2em;
+  }
+
+  strong {
+    color: var(--text-body-strong);
+    font-weight: 600;
+  }
+
+  code {
+    font: var(--code-weight) var(--code-size) / var(--code-lh) var(--code-family);
+    padding: 0.1em 0.3em;
+    border-radius: var(--radius-xs);
+    background: var(--surface-code);
+  }
+
+  .group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    margin-top: var(--space-sm);
+  }
+
+  dl {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--hairline-soft);
+    border-radius: var(--radius-lg);
+    background: var(--surface-card);
+  }
+
+  .option {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xxs);
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .option + .option {
+    border-top: 1px solid var(--hairline-soft);
+  }
+
+  dt {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-md);
+    color: var(--text-ink);
+    font-weight: 500;
+  }
+
+  .badge {
+    flex: none;
+    font: var(--caption-upper-weight) var(--caption-upper-size) / var(--caption-upper-lh) var(--caption-upper-family);
+    letter-spacing: var(--caption-upper-ls);
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  dd {
+    font: var(--body-sm-weight) var(--body-sm-size) / var(--body-sm-lh) var(--body-sm-family);
+    color: var(--text-muted);
+  }
+</style>
