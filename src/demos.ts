@@ -17,5 +17,11 @@ export const DEMOS: Demo[] = [
     name: "Working mark",
     path: "working-mark/",
     summary: "Six working states, each with an entrance, a loop and an exit."
+  },
+  {
+    name: "Windows Animation Disabler",
+    path: "windows-animation-disabler/",
+    summary:
+      "A Windhawk mod that turns off chosen taskbar and shell animations in Windows 11."
   }
 ];
