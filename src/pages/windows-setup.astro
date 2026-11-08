@@ -4,10 +4,16 @@ import Page from "../layouts/Page.astro";
 import { parseSetup } from "../scripts/windows-setup.ts";
 import { FILES } from "../scripts/windows-setup-files.ts";
 
-// The lists below come from the script's own files, the same ones the zip packs, so the page
+// The lists below come from the scripts' own files, the same ones the zip packs, so the page
 // can't drift from what people download.
-const groups = parseSetup(FILES);
-const count = groups.reduce((sum, group) => sum + group.items.length, 0);
+const scripts = parseSetup(FILES);
+const count = scripts.reduce((sum, script) => sum + script.items.length, 0);
+const about: Record<string, string> = {
+  "1-Offline.ps1":
+    "Before going online, from Terminal (Admin): the settings the guide changes by hand, then the WinUtil tweaks it recommends. Turning off UAC comes first.",
+  "2-Online.ps1":
+    "Once online, from a normal terminal: the developer environment. Needs the internet."
+};
 
 const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 const file = "windows-setup.zip";
@@ -18,7 +24,7 @@ const saveAs: Record<string, string> = { download: file };
 const guide = "https://archive.rottenth.cafe/system/windows/";
 const title = "Windows setup";
 const description =
-  "A PowerShell script that applies the settings and tweaks from a Windows 11 install guide.";
+  "Two PowerShell scripts that apply the settings, tweaks and developer tools from a Windows 11 install guide.";
 ---
 
 <Page
@@ -30,7 +36,7 @@ const description =
     <header class="intro">
       <h1>{title}</h1>
       <p class="lede">{description}</p>
-      <p class="meta">PowerShell 5.1 · Windows 11 · {count} changes in {groups.length} groups</p>
+      <p class="meta">PowerShell 5.1 · Windows 11 · {count} changes in {scripts.length} scripts</p>
       <Button
         href={download}
         {...saveAs}
@@ -42,10 +48,11 @@ const description =
 
     <section class="prose">
       <p>
-        The script goes with the <a href={guide}>Windows install guide</a> (in Chinese): it does the
-        settings the guide changes by hand, and the WinUtil tweaks the guide recommends, without
-        running WinUtil. It lists every change first and asks once before applying them. Nothing is
-        backed up and there is no undo, so read the list before you say yes.
+        The scripts go with the <a href={guide}>Windows install guide</a> (in Chinese): the first does
+        the settings the guide changes by hand and the WinUtil tweaks the guide recommends, without
+        running WinUtil; the second sets up the developer environment. Each lists every change first
+        and asks once before applying them. Nothing is backed up and there is no undo, so read the
+        list before you say yes.
       </p>
     </section>
 
@@ -53,34 +60,24 @@ const description =
       <h2>Run it</h2>
       <ol>
         <li>Download the zip and extract it (right-click it, <strong>Extract All</strong>).</li>
-        <li>Right-click the <code>windows-setup</code> folder inside and choose <strong>Open in Terminal</strong>.</li>
-        <li>Run <code>powershell -ExecutionPolicy Bypass -File .\Setup.ps1</code>. Add <code>-Dev</code> to include the developer environment without being asked.</li>
-        <li>Read the list, answer the questions, and approve the administrator prompt. The changes marked admin run in that window.</li>
-        <li>Sign out or restart when it's done.</li>
+        <li>Before going online, press Win+X, open <strong>Terminal (Admin)</strong>, go to the <code>windows-setup</code> folder and run <code>powershell -ExecutionPolicy Bypass -File .\1-Offline.ps1</code>. Without administrator rights it stops and changes nothing.</li>
+        <li>Read the list, say yes, and restart when it's done: turning off UAC takes effect after the restart.</li>
+        <li>Once online, open a normal terminal in the same folder and run <code>powershell -ExecutionPolicy Bypass -File .\2-Online.ps1</code>, if you want the developer environment.</li>
       </ol>
-      <p>
-        Run it from an administrator account: the admin window applies its changes to the account
-        that approves the prompt. The developer environment needs the internet; everything else
-        works offline.
-      </p>
     </section>
 
     <section class="prose">
-      <h2>What it changes</h2>
+      <h2>What they change</h2>
       {
-        groups.map((group) => (
+        scripts.map((script) => (
           <section class="group">
-            <h3>{group.title}</h3>
-            <p>
-              {group.description}{" "}
-              {group.byDefault ? "Applied unless you say no." : "Only when you ask for it."}
-            </p>
+            <h3><code>{script.file}</code></h3>
+            <p>{about[script.file]}</p>
             <dl>
-              {group.items.map((item) => (
+              {script.items.map((item) => (
                 <div class="option">
                   <dt>
                     <span>{item.title}</span>
-                    {item.admin && <span class="badge">Admin</span>}
                   </dt>
                   <dd>{item.description}</dd>
                 </div>
@@ -104,7 +101,7 @@ const description =
     <section class="prose">
       <h2>Sources</h2>
       <p>
-        The system optimizations follow the tweaks in Chris Titus Tech's
+        The WinUtil tweaks in <code>1-Offline.ps1</code> follow the tweaks in Chris Titus Tech's
         <a href="https://github.com/ChrisTitusTech/winutil">Windows Utility</a>, MIT license; the
         zip includes its notice.
       </p>
@@ -220,14 +217,6 @@ const description =
     gap: var(--space-md);
     color: var(--text-ink);
     font-weight: 500;
-  }
-
-  .badge {
-    flex: none;
-    font: var(--caption-upper-weight) var(--caption-upper-size) / var(--caption-upper-lh) var(--caption-upper-family);
-    letter-spacing: var(--caption-upper-ls);
-    text-transform: uppercase;
-    color: var(--text-muted);
   }
 
   dd {

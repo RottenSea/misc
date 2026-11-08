@@ -1,24 +1,25 @@
-// Reads the groups and changes the Windows setup script registers, from the
-// `Register-SetupGroup` and `Register-SetupItem` calls in its files. Each call keeps its
-// parameters on one line, so a line is enough to read one.
+// Reads the changes the two Windows setup scripts apply, from the `Register-SetupItem` calls in
+// their folders. Each call keeps its parameters on one line, so a line is enough to read one.
 
 export interface SetupItem {
   id: string;
-  group: string;
   title: string;
   description: string;
-  /** Runs in the elevated window. */
-  admin: boolean;
 }
 
-export interface SetupGroup {
-  id: string;
-  title: string;
-  description: string;
-  /** Applied unless the reader says no; the other groups are asked about. */
-  byDefault: boolean;
+export interface SetupScript {
+  /** The file to run, such as `1-Offline.ps1`. */
+  file: string;
+  /** The folder it loads its changes from. */
+  folder: string;
   items: SetupItem[];
 }
+
+/** The scripts in the order they are run. Each loads every file in its folder. */
+export const SCRIPTS = [
+  { file: "1-Offline.ps1", folder: "offline" },
+  { file: "2-Online.ps1", folder: "online" }
+];
 
 /** The `-Name 'value'` and bare `-Switch` parameters of one call. */
 function parameters(line: string): {
@@ -46,40 +47,28 @@ function required(
 }
 
 /**
- * The groups in the order of their files, sorted by path as the script loads them, each with its
- * changes in the order they're registered.
+ * Each script with its changes, in the order it applies them: its folder's files sorted by name,
+ * then the order they're registered in. A change outside both folders would never run, so it
+ * throws.
  */
-export function parseSetup(files: Record<string, string>): SetupGroup[] {
-  const groups: SetupGroup[] = [];
-  const items: SetupItem[] = [];
+export function parseSetup(files: Record<string, string>): SetupScript[] {
+  const scripts: SetupScript[] = SCRIPTS.map((script) => ({
+    ...script,
+    items: []
+  }));
   for (const path of Object.keys(files).sort()) {
+    const script = scripts.find(({ folder }) => path.startsWith(`${folder}/`));
     for (const line of files[path].split(/\r?\n/)) {
-      if (line.startsWith("Register-SetupGroup ")) {
-        const { values, switches } = parameters(line);
-        groups.push({
-          id: required(values, "Id", line),
-          title: required(values, "Title", line),
-          description: required(values, "Description", line),
-          byDefault: switches.has("Default"),
-          items: []
-        });
-      } else if (line.startsWith("Register-SetupItem ")) {
-        const { values, switches } = parameters(line);
-        items.push({
-          id: required(values, "Id", line),
-          group: required(values, "Group", line),
-          title: required(values, "Title", line),
-          description: required(values, "Description", line),
-          admin: switches.has("Admin")
-        });
-      }
+      if (!line.startsWith("Register-SetupItem ")) continue;
+      const { values } = parameters(line);
+      const id = required(values, "Id", line);
+      if (!script) throw new Error(`${id} in ${path} is in no script's folder`);
+      script.items.push({
+        id,
+        title: required(values, "Title", line),
+        description: required(values, "Description", line)
+      });
     }
   }
-  for (const item of items) {
-    const group = groups.find(({ id }) => id === item.group);
-    if (!group)
-      throw new Error(`${item.id} is in an unknown group, ${item.group}`);
-    group.items.push(item);
-  }
-  return groups;
+  return scripts;
 }

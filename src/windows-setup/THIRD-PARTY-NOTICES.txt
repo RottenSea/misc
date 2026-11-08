@@ -1,4 +1,4 @@
-The changes in items/2-optimizations.ps1 follow the tweaks in Chris Titus Tech's Windows Utility
+The changes in offline/2-winutil.ps1 follow the tweaks in Chris Titus Tech's Windows Utility
 (https://github.com/ChrisTitusTech/winutil), which is under this license:
 
 MIT License

@@ -1,4 +1,4 @@
-// Reading the Windows setup script, which the Windows setup page is built from, and the zip it's
+// Reading the Windows setup scripts, which the Windows setup page is built from, and the zip it's
 // offered in.
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
@@ -14,24 +14,36 @@ const files = Object.fromEntries(
     .filter((path) => /\.(ps1|txt)$/.test(path))
     .map((path) => [path, readFileSync(new URL(path, root), "utf8")])
 );
-const groups = parseSetup(files);
+const scripts = parseSetup(files);
+const ids = (file) =>
+  scripts.find((script) => script.file === file).items.map(({ id }) => id);
 
-test("reads the groups in the order the script loads them", () => {
+test("reads the two scripts in the order they are run", () => {
   assert.deepEqual(
-    groups.map(({ id }) => id),
-    ["settings", "optimizations", "dev"]
+    scripts.map(({ file }) => file),
+    ["1-Offline.ps1", "2-Online.ps1"]
   );
+  for (const { file } of scripts) assert.ok(files[file], file);
 });
 
-test("applies the guide's groups by default, not the developer environment", () => {
-  assert.deepEqual(
-    groups.map(({ byDefault }) => byDefault),
-    [true, true, false]
-  );
+test("turns off UAC first, before going online", () => {
+  assert.equal(ids("1-Offline.ps1")[0], "uac");
+  assert.ok(!ids("2-Online.ps1").includes("uac"));
+});
+
+test("keeps the developer environment for after going online", () => {
+  assert.deepEqual(ids("2-Online.ps1"), [
+    "scoop",
+    "node",
+    "git-long-paths",
+    "pi-agent",
+    "github-login"
+  ]);
+  assert.ok(!ids("1-Offline.ps1").includes("classic-outlook"));
 });
 
 test("every change has a unique id and text to show", () => {
-  const items = groups.flatMap(({ items }) => items);
+  const items = scripts.flatMap(({ items }) => items);
   assert.equal(new Set(items.map(({ id }) => id)).size, items.length);
   for (const item of items) {
     assert.ok(item.title.length > 0, item.id);
@@ -39,31 +51,20 @@ test("every change has a unique id and text to show", () => {
   }
 });
 
-test("marks the changes that need the admin window", () => {
-  const settings = groups[0].items;
-  assert.equal(settings.find(({ id }) => id === "long-paths")?.admin, true);
-  assert.equal(
-    settings.find(({ id }) => id === "mouse-acceleration")?.admin,
-    false
-  );
-});
-
 test("turns a doubled quote back into one", () => {
-  const [group] = parseSetup({
-    "a.ps1": [
-      "Register-SetupGroup -Id 'g' -Title 'G' -Description 'It''s here.' -Default",
-      "Register-SetupItem -Id 'i' -Group 'g' -Title 'Don''t' -Description 'x' -Action {"
-    ].join("\n")
+  const [offline] = parseSetup({
+    "offline/a.ps1":
+      "Register-SetupItem -Id 'i' -Title 'Don''t' -Description 'It''s here.' -Action {"
   });
-  assert.equal(group.description, "It's here.");
-  assert.equal(group.items[0].title, "Don't");
+  assert.equal(offline.items[0].title, "Don't");
+  assert.equal(offline.items[0].description, "It's here.");
 });
 
-test("rejects a change in a group that doesn't exist", () => {
+test("rejects a change in no script's folder", () => {
   assert.throws(() =>
     parseSetup({
-      "a.ps1":
-        "Register-SetupItem -Id 'i' -Group 'none' -Title 't' -Description 'd' -Action {"
+      "items/a.ps1":
+        "Register-SetupItem -Id 'i' -Title 't' -Description 'd' -Action {"
     })
   );
 });
@@ -74,7 +75,7 @@ test("crc32 matches the standard check value", () => {
 
 test("a zip entry inflates back to its data", () => {
   const data = new TextEncoder().encode("Write-Host 'hello'\r\n".repeat(20));
-  const archive = zip([{ name: "windows-setup/Setup.ps1", data }]);
+  const archive = zip([{ name: "windows-setup/1-Offline.ps1", data }]);
   const view = new DataView(archive.buffer);
   assert.equal(view.getUint32(0, true), 0x04034b50);
   const nameLength = view.getUint16(26, true);

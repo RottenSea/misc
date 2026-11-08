@@ -1,54 +1,68 @@
-# Shared by Setup.ps1 and the files in items\.
+# Shared by 1-Offline.ps1, 2-Online.ps1 and the files in offline\ and online\.
 
-$script:SetupGroups = @()
 $script:SetupItems = @()
 
-# A group of changes. The groups marked -Default are applied unless you say no; Setup.ps1 asks
-# about the others. Keep each call on one line: the misc site reads the title and description
-# from it.
-function Register-SetupGroup {
-    param(
-        [Parameter(Mandatory)][string]$Id,
-        [Parameter(Mandatory)][string]$Title,
-        [Parameter(Mandatory)][string]$Description,
-        [switch]$Default
-    )
-    $script:SetupGroups += [pscustomobject]@{
-        Id = $Id; Title = $Title; Description = $Description; Default = [bool]$Default
-    }
-}
-
-# One change. -Admin runs it in the elevated window; -RestartExplorer restarts Explorer once
-# everything is done, so the taskbar and File Explorer pick it up. Keep everything before
-# -Action on one line, as with Register-SetupGroup.
+# One change. -RestartExplorer restarts Explorer once everything is done, so the taskbar and File
+# Explorer pick it up. Keep everything before -Action on one line: the misc site reads the title
+# and description from it.
 function Register-SetupItem {
     param(
         [Parameter(Mandatory)][string]$Id,
-        [Parameter(Mandatory)][string]$Group,
         [Parameter(Mandatory)][string]$Title,
         [Parameter(Mandatory)][string]$Description,
-        [switch]$Admin,
         [switch]$RestartExplorer,
         [Parameter(Mandatory)][scriptblock]$Action
     )
     $script:SetupItems += [pscustomobject]@{
-        Id = $Id; Group = $Group; Title = $Title; Description = $Description
-        Admin = [bool]$Admin; RestartExplorer = [bool]$RestartExplorer; Action = $Action
+        Id = $Id; Title = $Title; Description = $Description
+        RestartExplorer = [bool]$RestartExplorer; Action = $Action
     }
 }
 
-# Runs the changes in order and returns how many failed. A failed change doesn't stop the rest.
-function Invoke-SetupItems {
-    param([object[]]$Items)
+# Loads the changes in $Folder, lists them, asks once unless -Yes, then applies them in order. A
+# failed change doesn't stop the rest. Returns how many failed, or -1 when you said no.
+function Invoke-SetupScript {
+    param(
+        [Parameter(Mandatory)][string]$Title,
+        [Parameter(Mandatory)][string]$Folder,
+        [switch]$Yes
+    )
+    Get-ChildItem $Folder -Filter '*.ps1' |
+        Sort-Object Name |
+        ForEach-Object { . $_.FullName }
+
+    Write-Host ''
+    Write-Host $Title -ForegroundColor Cyan
+    Write-Host ''
+    foreach ($item in $script:SetupItems) { Write-Host ("  {0}" -f $item.Title) }
+    Write-Host ''
+
+    if (-not $Yes) {
+        $answer = Read-Host ("Apply these {0} changes? [Y/n]" -f $script:SetupItems.Count)
+        if ($answer -match '^(n|no)$') {
+            Write-Host 'Nothing changed.'
+            return -1
+        }
+    }
+
     $failed = 0
-    foreach ($item in $Items) {
+    foreach ($item in $script:SetupItems) {
         Write-Host ("- {0}" -f $item.Title)
         try {
-            & $item.Action
+            # To the screen, so the only thing this function returns is the count.
+            & $item.Action | Out-Host
         } catch {
             $failed++
             Write-Warning ("  Failed: {0}" -f $_.Exception.Message)
         }
+    }
+    if ($script:SetupItems | Where-Object RestartExplorer) { Restart-Explorer }
+
+    Write-Host ''
+    if ($failed) {
+        Write-Host ("Done, with {0} failed change(s). See the messages above." -f $failed) -ForegroundColor Yellow
+    } else {
+        Write-Host 'Done.' -ForegroundColor Green
     }
     return $failed
 }
