@@ -16,14 +16,14 @@
     "test": "node --test"
   },
   "dependencies": {
-    "@astrojs/markdown-remark": "7.3.4",
-    "@rottensea/ds-personal-website": "https://github.com/RottenSea/design-system/releases/download/personal-website-v1.2.0/rottensea-ds-personal-website-1.2.0.tgz",
-    "astro": "7.4.2",
+    "@astrojs/markdown-remark": "7.3.6",
+    "@rottensea/ds-personal-website": "https://github.com/RottenSea/design-system/releases/download/personal-website-v1.2.1/rottensea-ds-personal-website-1.2.1.tgz",
+    "astro": "7.4.7",
     "sharp": "0.35.5"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.12",
-    "@biomejs/biome": "2.6.3",
+    "@biomejs/biome": "2.6.6",
     "@types/node": "24.19.2",
     "typescript": "6.0.3"
   }
